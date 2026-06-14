@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vpromc
-  namespace: {{ .Release.Namespace }}
   labels:
     app: vpromc
 spec:

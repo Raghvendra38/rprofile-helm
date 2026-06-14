@@ -7,7 +7,7 @@ metadata:
 spec:
   description: rprofile PROD environment project
   sourceRepos:
-    - git@github.com:YourUser/rprofile-helm.git
+    - git@github.com:Raghvendra38/rprofile-helm.git
   destinations:
     - namespace: rprofile-prod
       server: https://kubernetes.default.svc
