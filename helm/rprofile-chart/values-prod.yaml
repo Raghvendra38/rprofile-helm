@@ -1,13 +1,13 @@
 defaultUser: guest
 app:
   image: 793451441003.dkr.ecr.us-east-1.amazonaws.com/rprofile-prod
-  tag: 804add9
+  tag: prod-a702e11
   replicas: 1
   containerPort: 8080
   servicePort: 8080
 db:
   image: vprocontainers/vprofiledb
-  tag: latest
+  tag: prod-a702e11
   replicas: 1
   containerPort: 3306
   servicePort: 3306
@@ -15,13 +15,13 @@ db:
   storageSize: 3Gi
 memcached:
   image: memcached
-  tag: latest
+  tag: prod-a702e11
   replicas: 1
   containerPort: 11211
   servicePort: 11211
 rabbitmq:
   image: rabbitmq
-  tag: latest
+  tag: prod-a702e11
   replicas: 1
   containerPort: 5672
   servicePort: 5672
