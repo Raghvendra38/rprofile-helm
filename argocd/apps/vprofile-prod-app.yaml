@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rprofile-prod
+  namespace: argocd
+spec:
+  project: rprofile-prod
+  source:
+    repoURL: git@github.com:Raghvendra38/rprofile-helm.git
+    targetRevision: main
+    path: helm/rprofile-chart
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rprofile-prod
+  syncPolicy: # NO 'automated' block = MANUAL SYNC
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    # To deploy prod:
+    # argocd app sync rprofile-prod

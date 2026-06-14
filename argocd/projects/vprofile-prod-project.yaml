@@ -1,0 +1,19 @@
+# rprofile-prod-project.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: rprofile-prod
+  namespace: argocd
+spec:
+  description: rprofile PROD environment project
+  sourceRepos:
+    - git@github.com:YourUser/rprofile-helm.git
+  destinations:
+    - namespace: rprofile-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

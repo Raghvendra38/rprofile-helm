@@ -1,0 +1,32 @@
+name: CD -- Update Image Tag
+on:
+  repository_dispatch:
+    types: [update-dev-image, update-prod-image]
+jobs:
+  update-image-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Determine environment
+        run: |
+          EVENT_TYPE='${{ github.event.action }}'
+          if [ "$EVENT_TYPE" = 'update-dev-image' ]; then
+            echo 'VALUES_FILE=helm/rprofile-chart/values-dev.yaml' >> $GITHUB_ENV
+            echo 'ENVIRONMENT=dev' >> $GITHUB_ENV
+          else
+            echo 'VALUES_FILE=helm/rprofile-chart/values-prod.yaml' >> $GITHUB_ENV
+            echo 'ENVIRONMENT=prod' >> $GITHUB_ENV
+          fi
+      - name: Update image tag
+        run: |
+          IMAGE_TAG='${{ github.event.client_payload.image_tag }}'
+          sed -i "s| tag:.*| tag: ${IMAGE_TAG}|g" $VALUES_FILE
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add $VALUES_FILE
+          git commit -m "ci: update $ENVIRONMENT image tag to ${{github.event.client_payload.image_tag }}"
+          git push
