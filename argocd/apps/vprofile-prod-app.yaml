@@ -11,7 +11,6 @@ spec:
     path: helm/rprofile-chart
     helm:
       valueFiles:
-        - values.yaml
         - values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
