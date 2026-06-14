@@ -7,7 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.HELM_REPO_TOKEN }}
 
       - name: Determine environment
         run: |
@@ -30,3 +32,4 @@ jobs:
           git add $VALUES_FILE
           git commit -m "ci: update $ENVIRONMENT image tag to ${{github.event.client_payload.image_tag }}"
           git push
+          
