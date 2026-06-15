@@ -1,7 +1,7 @@
 defaultUser: guest
 app:
   image: 793451441003.dkr.ecr.us-east-1.amazonaws.com/rprofile-dev
-  tag: 804add9
+  tag: dev-a2a21dc
   replicas: 1
   containerPort: 8080
   servicePort: 8080
