@@ -32,7 +32,7 @@ initcontainers:
     - -c
 ingress:
   enabled: true
-  host: rprofile.ragdev.co.in
+  host: devprofile.ragdev.co.in
   servicePort: 8080
 secrets:
   dbPassword: vprodbpass
