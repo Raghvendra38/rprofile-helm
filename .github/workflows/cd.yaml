@@ -11,6 +11,11 @@ jobs:
         with:
           token: ${{ secrets.HELM_REPO_TOKEN }}
 
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
       - name: Determine environment
         run: |
           EVENT_TYPE='${{ github.event.action }}'
@@ -21,10 +26,12 @@ jobs:
             echo 'VALUES_FILE=helm/rprofile-chart/values-prod.yaml' >> $GITHUB_ENV
             echo 'ENVIRONMENT=prod' >> $GITHUB_ENV
           fi
+
       - name: Update image tag
         run: |
           IMAGE_TAG='${{ github.event.client_payload.image_tag }}'
-          sed -i "s| tag:.*| tag: ${IMAGE_TAG}|g" $VALUES_FILE
+          yq -i '.app.tag = "'"${IMAGE_TAG}"'"' $VALUES_FILE
+          
       - name: Commit and push
         run: |
           git config user.name 'github-actions[bot]'
