@@ -1,7 +1,7 @@
 defaultUser: guest
 app:
   image: 793451441003.dkr.ecr.us-east-1.amazonaws.com/rprofile-prod
-  tag: prod-7707337
+  tag: prod-597c1aa
   replicas: 1
   containerPort: 8080
   servicePort: 8080
