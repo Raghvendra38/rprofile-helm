@@ -1,0 +1,136 @@
+#  Loki-Stack sub-chart values 
+loki-stack:
+  loki:
+    enabled: true
+    persistence:
+      enabled: true
+      storageClassName: gp2
+      size: 10Gi
+    config:
+      auth_enabled: false
+      server:
+        http_listen_port: 3100
+      ingester:
+        lifecycler:
+          ring:
+            kvstore:
+              store: inmemory
+            replication_factor: 1
+          final_sleep: 0s
+        chunk_idle_period: 5m
+        chunk_retain_period: 30s
+        max_transfer_retries: 0
+        wal:
+          enabled: true
+          dir: /data/loki/wal
+      limits_config:
+        enforce_metric_name: false
+        reject_old_samples: true
+        reject_old_samples_max_age: 168h # 7 days
+        max_entries_limit_per_query: 5000
+        ingestion_rate_mb: 16
+        ingestion_burst_size_mb: 32
+      schema_config:
+        configs:
+          - from: "2024-01-01"
+            store: boltdb-shipper
+            object_store: filesystem
+            schema: v11
+            index:
+              prefix: index_
+              period: 24h
+      storage_config:
+        boltdb_shipper:
+          active_index_directory: /data/loki/boltdb-shipper-active
+          cache_location: /data/loki/boltdb-shipper-cache
+          cache_ttl: 24h
+          shared_store: filesystem
+        filesystem:
+          directory: /data/loki/chunks
+      compactor:
+        working_directory: /data/loki/boltdb-shipper-compactor
+        shared_store: filesystem
+        compaction_interval: 10m
+        retention_enabled: true
+        retention_delete_delay: 2h
+        retention_delete_worker_count: 150
+      table_manager:
+        retention_deletes_enabled: true
+        retention_period: 168h # 7 days
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 300m
+  #  Promtail sub-chart 
+  promtail:
+    enabled: true
+    config:
+      logLevel: info
+      serverPort: 3101
+      clients:
+        - url: http://{{ .Release.Name }}-loki-stack:3100/loki/api/v1/push
+          tenant_id: ""
+          batchwait: 1s
+          batchsize: 102400
+          timeout: 10s
+          backoff_config:
+            min_period: 500ms
+            max_period: 5m
+            max_retries: 10
+      scrape_configs:
+        - job_name: kubernetes-pods
+          pipeline_stages:
+            - docker: {}
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_node_name]
+              target_label: __host__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              target_label: container
+            - source_labels: [__meta_kubernetes_pod_uid,
+                              __meta_kubernetes_pod_container_name]
+              separator: /
+              replacement: /var/log/pods/*$1/*.log
+              target_label: __path__
+            - action: replace
+              replacement: static
+              target_label: scrape_method
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+      limits:
+        memory: 128Mi
+        cpu: 200m
+    # Mount host log paths
+    volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+    volumeMounts:
+      - name: varlog
+        mountPath: /var/log
+        readOnly: true
+      - name: varlibdockercontainers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
+  # Disable built-in Grafana — we manage it separately below
+  grafana:
+    enabled: false

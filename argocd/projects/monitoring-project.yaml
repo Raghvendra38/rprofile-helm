@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: monitoring
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: rprofile-gitops
+spec:
+  description: Monitoring stack — Loki + Promtail + Grafana
+  # Only this repo is allowed as a source
+  sourceRepos:
+    - git@github.com:Raghvendra38/rprofile-helm.git
+    - https://grafana.github.io/helm-charts
+  # Only deploy to the monitoring namespace
+  destinations:
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+  # Allow creating the monitoring namespace itself
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  # Allow all resource kinds inside monitoring namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  # Sync window — allow auto-sync at all times
+  syncWindows:
+    - kind: allow
+      schedule: '* * * * *'
+      duration: 24h
+      applications:
+        - monitoring-stack
+      manualSync: true
+  roles:
+    - name: monitoring-admin
+      description: Full access to monitoring project
+      policies:
+        - p, proj:monitoring:monitoring-admin, applications, *, monitoring/*, allow
+      groups:
+        - monitoring-team

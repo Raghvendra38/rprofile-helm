@@ -1,0 +1,116 @@
+#  Grafana sub-chart values 
+grafana:
+  enabled: true
+  # Admin credentials — store in Kubernetes Secret in production
+  adminUser: admin
+  adminPassword: rprofile@Admin123 # Change after first login
+  persistence:
+    enabled: true
+    storageClassName: gp2
+    size: 5Gi
+    accessModes:
+      - ReadWriteOnce
+  # Pre-configure Loki as default datasource
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Loki
+          type: loki
+          # Service DNS: <release>-loki-stack.<namespace>.svc.cluster.local
+          url: http://monitoring-loki-stack.monitoring.svc.cluster.local:3100
+          access: proxy
+          isDefault: true
+          jsonData:
+            maxLines: 1000
+            derivedFields:
+              - datasourceUid: ''
+                matcherRegex: 'traceId=(\w+)'
+                name: TraceID
+                url: ''
+  # Pre-load dashboards via configmap
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: rprofile
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  # Import community dashboards by ID
+  dashboards:
+    default:
+      loki-kubernetes-logs:
+        gnetId: 15141
+        revision: 1
+        datasource: Loki
+      loki-dashboard-quick-search:
+        gnetId: 14055
+        revision: 5
+        datasource: Loki
+  # Grafana server config
+  grafana.ini:
+    server:
+      root_url: https://grafana.ragdev.co.in
+      serve_from_sub_path: false
+    security:
+      allow_embedding: true
+      cookie_secure: true
+    auth:
+      disable_login_form: false
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  # ALB Ingress — exposes Grafana via HTTPS
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:793451441003:certificate/cc7d45c4-d6ab-4cb0-bcac-96f8b91e11bb
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: '443'
+      alb.ingress.kubernetes.io/healthcheck-path: /api/health
+    hosts:
+      - grafana.ragdev.co.in
+    paths:
+      - /
+    pathType: Prefix
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  # Sidecar for dynamic dashboard loading
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+    datasources:
+      enabled: true
+      label: grafana_datasource
+  # Readiness/liveness probes
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 60
+    failureThreshold: 10

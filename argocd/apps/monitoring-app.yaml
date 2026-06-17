@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: rprofile-gitops
+  # Finalizer ensures ArgoCD cleans up K8s resources when app is deleted
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Link to the AppProject we created above
+  project: monitoring
+  source:
+    # rprofile-helm SSH URL (same as used for rprofile-dev/prod apps)
+    repoURL: git@github.com:Raghvendra38/rprofile-helm.git
+    targetRevision: main
+    path: helm/monitoring
+    helm:
+      # Merge both values files — loki config + grafana config
+      valueFiles:
+        - values-loki.yaml
+        - values-grafana.yaml
+      # Release name used inside templates for service DNS names
+      releaseName: monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  #  AUTO-SYNC — same as rprofile-dev 
+  syncPolicy:
+    automated:
+      prune: true # Remove K8s resources deleted from Git
+      selfHeal: true # Revert manual kubectl changes back to Git state
+    syncOptions:
+      - CreateNamespace=true # Create monitoring ns if missing
+      - ServerSideApply=true # Better handling of large CRDs
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true # Delete old resources after new ones are healthy
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  # Health checks — ArgoCD waits for these before marking Synced
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/volumeClaimTemplates # Ignore immutable VCT changes
+
