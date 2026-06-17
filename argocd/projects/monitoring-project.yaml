@@ -17,8 +17,12 @@ spec:
       server: https://kubernetes.default.svc
   # Allow creating the monitoring namespace itself
   clusterResourceWhitelist:
-    - group: ''
-      kind: Namespace
+  - group: ''
+    kind: Namespace
+  - group: 'rbac.authorization.k8s.io'
+    kind: ClusterRole
+  - group: 'rbac.authorization.k8s.io'
+    kind: ClusterRoleBinding
   # Allow all resource kinds inside monitoring namespace
   namespaceResourceWhitelist:
     - group: '*'
